@@ -1,8 +1,13 @@
-from flask import Flask, render_template, request
+from flask import Flask, render_template, request, jsonify
+from flask_cors import CORS
 import os
 from werkzeug.utils import secure_filename
 from predict import predict_disaster
 from datetime import datetime  # <-- PUDHUSA ADD PANNIRUKKOM
+
+# --- APP INITIALIZATION ---
+app = Flask(__name__)
+CORS(app) # Idhu thaan ella frontend-aiyum allow pannum!
 
 # Import the utility modules
 try:
@@ -15,8 +20,6 @@ except ImportError as e:
     weather_fusion = None
     severity_calculator = None
     print(f"❌ Error loading utility modules: {e}")
-
-app = Flask(__name__)
 
 # --- CONFIGURATION ---
 UPLOAD_FOLDER = "static/uploads"
