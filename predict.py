@@ -3,20 +3,36 @@ import numpy as np
 from PIL import Image
 import cv2
 import os
+import gdown
 
 # --- CONFIGURATION ---
 MODEL_PATH = "model/disaster_model.h5"
 IMG_SIZE = 224
 
-# --- LOAD AI ENGINE ---
+# --- LOAD AI ENGINE (AUTO-DOWNLOAD FROM DRIVE) ---
 print("Loading AI Engine...")
-model = None  # <-- PUDHUSA ADD PANNIRUKKOM: First model=None nu set panrom
+model = None
+
+# Namma Google Drive File ID
+FILE_ID = '1TROCKPsxVJIzfcMWEVpWgHCMjuDk1pGD'
+
 try:
+    # Model folder illana create pannu
+    os.makedirs("model", exist_ok=True)
+    
+    # Model file illana Drive-la irundhu download pannu
+    if not os.path.exists(MODEL_PATH):
+        print("Model not found locally. Downloading from Google Drive... (This takes 1-2 mins)")
+        # Auto-download from Google Drive
+        gdown.download(f'https://drive.google.com/uc?id={FILE_ID}', MODEL_PATH, quiet=False)
+        print("✅ Download Complete!")
+
+    # Model-a load pannu
     if os.path.exists(MODEL_PATH):
         model = tf.keras.models.load_model(MODEL_PATH, compile=False)
         print("✅ AI Engine Loaded Successfully")
     else:
-        print(f"❌ CRITICAL ERROR: Model file NOT FOUND at {MODEL_PATH}")
+        print(f"❌ CRITICAL ERROR: Model download failed!")
 except Exception as e:
     print(f"❌ Error loading model: {e}")
 
@@ -54,10 +70,9 @@ def is_invalid_image(image_path):
 
 # --- MAIN PREDICTION ENGINE ---
 def predict_disaster(image_path):
-    # <-- PUDHUSA ADD PANNIRUKKOM: Model illana theliva error anuppa -->
     global model
     if model is None:
-        raise Exception("AI Model (.h5 file) is missing on the server! Upload it to GitHub.")
+        raise Exception("AI Model (.h5 file) is missing! Server failed to download it.")
 
     # 1. Run Smart Guard Analysis
     is_invalid, reason = is_invalid_image(image_path)
