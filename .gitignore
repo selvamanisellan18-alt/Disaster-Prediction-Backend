@@ -1,0 +1,5 @@
+myenv/
+__pycache__/
+model/disaster_model.h5
+dataset/
+dataset2/
