@@ -8,35 +8,31 @@ import gdown
 # --- CONFIGURATION ---
 MODEL_PATH = "model/disaster_model.h5"
 IMG_SIZE = 224
+FILE_ID = '1TROCKPsxVJIzfcMWEVpWgHCMjuDk1pGD'
+CLASSES = ["Cyclone", "Fire", "Flood", "Normal"]
 
-# --- LOAD AI ENGINE (AUTO-DOWNLOAD FROM DRIVE) ---
-print("Loading AI Engine...")
+# Global model variable
 model = None
 
-# Namma Google Drive File ID
-FILE_ID = '1TROCKPsxVJIzfcMWEVpWgHCMjuDk1pGD'
+# --- LAZY LOADING LOGIC ---
+def load_ai_model():
+    global model
+    if model is not None:
+        return # Already loaded, skip!
 
-try:
-    # Model folder illana create pannu
+    print("Initializing AI Engine...")
     os.makedirs("model", exist_ok=True)
     
-    # Model file illana Drive-la irundhu download pannu
     if not os.path.exists(MODEL_PATH):
-        print("Model not found locally. Downloading from Google Drive... (This takes 1-2 mins)")
-        # Auto-download from Google Drive
+        print("Downloading model from Google Drive... Please wait.")
         gdown.download(f'https://drive.google.com/uc?id={FILE_ID}', MODEL_PATH, quiet=False)
         print("✅ Download Complete!")
 
-    # Model-a load pannu
     if os.path.exists(MODEL_PATH):
         model = tf.keras.models.load_model(MODEL_PATH, compile=False)
         print("✅ AI Engine Loaded Successfully")
     else:
-        print(f"❌ CRITICAL ERROR: Model download failed!")
-except Exception as e:
-    print(f"❌ Error loading model: {e}")
-
-CLASSES = ["Cyclone", "Fire", "Flood", "Normal"]
+        raise Exception("Model file missing!")
 
 # --- SMART VALIDATION LOGIC ---
 def is_invalid_image(image_path):
@@ -71,16 +67,17 @@ def is_invalid_image(image_path):
 # --- MAIN PREDICTION ENGINE ---
 def predict_disaster(image_path):
     global model
-    if model is None:
-        raise Exception("AI Model (.h5 file) is missing! Server failed to download it.")
-
-    # 1. Run Smart Guard Analysis
+    
+    # 1. LOAD MODEL ONLY WHEN FIRST IMAGE IS UPLOADED (Lazy Loading)
+    load_ai_model()
+    
+    # 2. Run Smart Guard Analysis
     is_invalid, reason = is_invalid_image(image_path)
     if is_invalid:
         print(f"❌ Security Block Triggered: {reason}")
         return "INVALID INPUT", 99.99
 
-    # 2. Preprocess the Image for AI
+    # 3. Preprocess the Image for AI
     try:
         img = Image.open(image_path).convert("RGB").resize((IMG_SIZE, IMG_SIZE))
         img_array = np.array(img, dtype=np.float32) / 255.0
@@ -89,7 +86,7 @@ def predict_disaster(image_path):
         print(f"❌ Image Processing Error: {e}")
         return "INVALID INPUT", 99.99
 
-    # 3. Predict using MobileNetV2
+    # 4. Predict using MobileNetV2
     prediction = model.predict(img_array)[0]
     class_index = int(np.argmax(prediction))
     confidence = float(np.max(prediction))
